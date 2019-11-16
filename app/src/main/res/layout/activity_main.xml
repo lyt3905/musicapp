@@ -6,10 +6,12 @@
 
 
     <TextView
-            android:id="@+id/hjgh"
-            android:layout_width="wrap_content"
+            android:id="@+id/title"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text=""/>
+            android:textAlignment="center"
+            android:textSize="25sp"
+            android:text="歌曲名称"/>
 
     <RelativeLayout
                 android:layout_width="match_parent"

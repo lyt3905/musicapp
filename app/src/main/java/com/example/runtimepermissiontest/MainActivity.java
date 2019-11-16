@@ -3,6 +3,7 @@ package com.example.runtimepermissiontest;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.icu.text.SimpleDateFormat;
 import android.media.MediaPlayer;
 
@@ -14,11 +15,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SeekBar;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,17 +29,25 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener, MediaPlayer.OnCompletionListener, SeekBar.OnSeekBarChangeListener {
 
+
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener, MediaPlayer.OnCompletionListener, SeekBar.OnSeekBarChangeListener {
+    ArrayList<Map<String, Object>> result;
     protected String xunhuanmoshi="顺序播放";
+    public static MyDataBaseHelper dbHelper;
+    public static SQLiteDatabase sqlDB ;
     protected ListView mListView;
     protected Button mPreviousBtn;
     protected Button mPlayBtn;
     protected Button mNextBtn;
     protected TextView mCurrentTimeTv;
+    protected TextView title;
     protected TextView mTotalTimeTv;
     protected SeekBar mSeekBar;
     private List<MediaInfo> mMediaInfoList;
@@ -46,24 +57,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     // 记录当前播放歌曲的位置
     private int mCurrentPosition;
 
-    private Handler mHandler = new Handler(new Handler.Callback() {
-        @Override
-        public boolean handleMessage(Message msg) {
-
-            // 展示给进度条和当前时间
-            int progress = mMediaPlayer.getCurrentPosition();
-            mSeekBar.setProgress(progress);
-            mCurrentTimeTv.setText(parseTime(progress));
-
-            // 继续定时发送数据
-            updateProgress();
-
-            return true;
-        }
-    });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         super.setContentView(R.layout.activity_main);
         initView();
@@ -75,13 +72,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 startActivity(intent);
             }
         });
-        mMediaInfoList = getDatas();
+        setDatas();
 
-        ArrayAdapter adapter = new ArrayAdapter(this,
-                android.R.layout.simple_list_item_1,
-                mMediaInfoList);
 
-        mListView.setAdapter(adapter);
+
         mListView.setOnItemClickListener(this);
 
         final Button button=(Button)findViewById(R.id.xunhuananniu);
@@ -112,7 +106,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        setDatas();
+
+    }
+
     private void initView() {
+
+
+        dbHelper = MyDataBaseHelper.getInstance(MainActivity.this);
+
+        sqlDB=dbHelper.getWritableDatabase();
+        title = (TextView)findViewById(R.id.title);
         mListView = (ListView) findViewById(R.id.list_view);
         mPreviousBtn = (Button) findViewById(R.id.previous_btn);
         mPreviousBtn.setOnClickListener(MainActivity.this);
@@ -129,46 +136,42 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-    // 获取系统媒体数据库中的音频多媒体信息
-    private List<MediaInfo> getDatas() {
-        List<MediaInfo> list = new ArrayList<>();
+    private void setDatas() {
 
-        // 使用内容解析者访问系统提供的数据库
-        Cursor cursor = getContentResolver()
-                .query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                        null,
-                        null,
-                        null,
-                        MediaStore.Audio.Media.DEFAULT_SORT_ORDER);// 默认排序顺序
-        // 如果游标读取时还有下一个数据，读取
-
-        int idIndex = cursor.getColumnIndex(MediaStore.Audio.Media._ID);//获取列名对应的索引
-        int titleIndex = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);// 标题
-        int artistIndex = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);// 艺术家
-        int uriIndex = cursor.getColumnIndex(MediaStore.Audio.Media.DATA);// 文件路径
-
+        String key ="";
+        Cursor cursor = sqlDB.rawQuery(
+                "SELECT * FROM list" ,
+                new String[]{});
+        result = new ArrayList<Map<String, Object>>();
         while (cursor.moveToNext()) {
-            // 根据索引值获取对应列名中的数值
-            long _id = cursor.getLong(idIndex);
-            String title = cursor.getString(titleIndex);
-            String artist = cursor.getString(artistIndex);
-            String uri = cursor.getString(uriIndex);
+            Map<String, Object> map = new HashMap<String, Object>();
+            map.put("id",cursor.getInt(0));
+            map.put("uri", cursor.getString(1));
+            map.put("title", cursor.getString(2));
+            map.put("artist", cursor.getString(3));
+            result.add(map);
+        }
+        SimpleAdapter simpleAdapter = new SimpleAdapter(
+                getApplicationContext(),
+                result,
+                R.layout.line,
+                new String[]{"title"},
+                new int[]{R.id.textView1});
+        mListView.setAdapter(simpleAdapter);
 
-            MediaInfo mediaInfo = new MediaInfo(_id, uri, title, artist);
 
-            list.add(mediaInfo);
+        for (int i=0;i<result.size();i++) {
+            Log.d("1507", "" + result.get(i));
         }
 
-        for (MediaInfo mediaInfo : list) {
-            Log.d("1507", "" + mediaInfo.toString());
-        }
-        return list;
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         mCurrentPosition = position;
-
+        String s=result.get(position).get("title").toString();
+   
+        title.setText(s);
         changeMusic(mCurrentPosition);
     }
 
@@ -193,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 changeMusic(mCurrentPosition);
             if(xunhuanmoshi.equals("随机播放")) {
                 Random r=new Random();
-                int i=r.nextInt(mMediaInfoList.size());
+                int i=r.nextInt(result.size());
                 changeMusic(i);
             }
         }
@@ -215,8 +218,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     // 切歌
     private void changeMusic(int position) {
         if (position < 0) {
-            mCurrentPosition = position = mMediaInfoList.size() - 1;
-        } else if (position > mMediaInfoList.size() - 1) {
+            mCurrentPosition = position = result.size() - 1;
+        } else if (position > result.size() - 1) {
             mCurrentPosition = position = 0;
         }
 
@@ -230,7 +233,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 切歌之前先重置，释放掉之前的资源
             mMediaPlayer.reset();
             // 设置播放源
-            mMediaPlayer.setDataSource(mMediaInfoList.get(position).getUri());
+
+            mMediaPlayer.setDataSource(result.get(position).get("uri").toString());
             // 开始播放前的准备工作，加载多媒体资源，获取相关信息
             mMediaPlayer.prepare();
             // 开始播放
@@ -291,8 +295,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             changeMusic(mCurrentPosition);
         if(xunhuanmoshi.equals("随机播放")) {
             Random r=new Random();
-            int i=r.nextInt(mMediaInfoList.size());
+            int i=r.nextInt(result.size());
             changeMusic(i);
         }
     }
+    private Handler mHandler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+
+            // 展示给进度条和当前时间
+            int progress = mMediaPlayer.getCurrentPosition();
+            mSeekBar.setProgress(progress);
+            mCurrentTimeTv.setText(parseTime(progress));
+
+            // 继续定时发送数据
+            updateProgress();
+
+            return true;
+        }
+    });
+
 }

@@ -87,7 +87,6 @@ public class ListAdapter extends BaseAdapter {
                     @Override
                     public void onCheckedChanged(CompoundButton buttonView,
                                                  boolean isChecked) {
-
                         isCheck.put(position, isChecked);
                     }
                 });

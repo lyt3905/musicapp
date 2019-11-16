@@ -1,12 +1,12 @@
 package com.example.runtimepermissiontest;
 
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -14,9 +14,12 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.example.runtimepermissiontest.MainActivity.dbHelper;
+import static com.example.runtimepermissiontest.MainActivity.sqlDB;
+
+
 public class SecondActivity extends AppCompatActivity  {
     protected TextView tv_add;
-    protected Button btn_detele;
     protected Button btn_select_all;
     protected ListView listview;
     private List<MediaInfo> mediaInfoList;
@@ -25,6 +28,7 @@ public class SecondActivity extends AppCompatActivity  {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         super.setContentView(R.layout.activity_second);
+
         initView();
 
 
@@ -63,9 +67,11 @@ public class SecondActivity extends AppCompatActivity  {
         }
         return list;
     }
-    private void initView() {
-        tv_add = (TextView) findViewById(R.id.tv_add);
 
+    private void initView() {
+
+
+        tv_add = (TextView) findViewById(R.id.tv_add);
         btn_select_all = (Button) findViewById(R.id.btn_select_all);
 
         listview = (ListView) findViewById(R.id.listview);
@@ -74,18 +80,32 @@ public class SecondActivity extends AppCompatActivity  {
 
         listview.setAdapter(adapter);
 
-        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Log.d("状态", adapter.isCheck.toString());
-
-            }
-
-        });
         tv_add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("状态", adapter.isCheck.toString());
+
+                int version= sqlDB.getVersion()+1;
+                Log.d("version",version+"");
+                Log.d("dbHelper2",dbHelper.getDatabaseName());
+
+                dbHelper.onUpgrade( dbHelper.getWritableDatabase(), dbHelper.getWritableDatabase().getVersion(),version);
+
+
+
+                for(int i=0;i<adapter.isCheck.size();i++){
+                    if(adapter.isCheck.get(i))
+                    {
+                        MediaInfo mediaInfo= mediaInfoList.get(i);
+                        long id = mediaInfo.get_id();
+                        String uri=mediaInfo.getUri();
+                        String title=mediaInfo.getTitle();
+                        String artist = mediaInfo.getArtist();
+                        dbHelper.getWritableDatabase().execSQL("INSERT INTO list VALUES(?,?,?,?)", new Object[] {
+                                id, uri, title,artist});
+                        Log.d("插入成功的歌曲",title);
+                    }
+                }
+
             }
         });
     }
