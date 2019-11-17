@@ -9,7 +9,7 @@ import android.media.MediaPlayer;
 
 import android.os.Handler;
 import android.os.Message;
-import android.provider.MediaStore;
+
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -17,7 +17,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
+
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SeekBar;
@@ -37,7 +37,7 @@ import java.util.Random;
 
 
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener, MediaPlayer.OnCompletionListener, SeekBar.OnSeekBarChangeListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener, MediaPlayer.OnCompletionListener, SeekBar.OnSeekBarChangeListener, AdapterView.OnItemLongClickListener {
     ArrayList<Map<String, Object>> result;
     protected String xunhuanmoshi="顺序播放";
     public static MyDataBaseHelper dbHelper;
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         mListView.setOnItemClickListener(this);
-
+        mListView.setOnItemLongClickListener(this);
         final Button button=(Button)findViewById(R.id.xunhuananniu);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -170,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         mCurrentPosition = position;
         String s=result.get(position).get("title").toString();
-   
+
         title.setText(s);
         changeMusic(mCurrentPosition);
     }
@@ -315,4 +315,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     });
 
+    @Override
+    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+        String title= result.get(position).get("title").toString();
+        sqlDB.execSQL("delete from list where title=?",
+                new String[]{title+""});
+        Toast.makeText(MainActivity.this,title+"删除成功",Toast.LENGTH_SHORT).show();
+        setDatas();
+
+        return false;
+    }
 }

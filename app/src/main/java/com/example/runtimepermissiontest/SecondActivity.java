@@ -72,7 +72,7 @@ public class SecondActivity extends AppCompatActivity  {
 
 
         tv_add = (TextView) findViewById(R.id.tv_add);
-        btn_select_all = (Button) findViewById(R.id.btn_select_all);
+
 
         listview = (ListView) findViewById(R.id.listview);
         mediaInfoList = getDatas();

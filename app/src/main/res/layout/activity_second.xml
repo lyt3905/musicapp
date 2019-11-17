@@ -28,15 +28,6 @@
                 android:text="添加"
                 android:textColor="#fff" />
 
-        <Button
-                android:id="@+id/btn_select_all"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginLeft="1dp"
-                android:layout_weight="1"
-                android:background="#238286"
-                android:text="全选"
-                android:textColor="#fff" />
 
     </LinearLayout>
 </LinearLayout>
